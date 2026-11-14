@@ -1,13 +1,68 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>家庭照护负担试算器</title><link rel="stylesheet" href="/style.css"></head>
-<body><header><span>教研数据 · 复核工作区</span><h1>家庭照护负担试算器</h1><p>家庭收入区间与照护费用构成</p></header>
+<body><header><span>教研数据 · 复核工作区</span><h1>家庭照护负担试算器</h1><p>家庭收入区间与照护费用构成 · 家庭可负担性情景试算</p></header>
 <main><aside><h2>数据与范围</h2><label>数据版本<select id="revision"></select></label><div id="controls"></div>
-<button id="inspect">查看所选范围</button><label>导入完整数据<input id="upload" type="file" accept=".json,application/json"></label>
+<div class="tabs" role="tablist">
+  <button id="tab-explore" class="tab active" role="tab">费用浏览</button>
+  <button id="tab-trial" class="tab" role="tab">家庭可负担性试算</button>
+</div>
+<section id="panel-explore" class="panel">
+<button id="inspect">查看所选范围</button>
+</section>
+<section id="panel-trial" class="panel hidden">
+<h2>试算情景</h2>
+<label>服务口径
+<select id="trial-mode">
+<option value="observed">observed 样本消费（仅已购买）</option>
+<option value="uniform">uniform 统一服务情景（按需要）</option>
+</select></label>
+<label>负担线（净支出/可支配资源）<input id="trial-line" type="number" step="0.01" min="0.01" value="0.30"></label>
+<label>交通费漏报口径
+<select id="trial-missing">
+<option value="impute_median">中位数插补（点估计，保留区间）</option>
+<option value="zero">按0处理（点估计，保留区间）</option>
+<option value="exclude_cost">不计入费用（点估计，保留区间）</option>
+</select></label>
+<label>uniform 统一小时数（留空用记录小时数）<input id="trial-hours" type="number" step="0.5" min="0" placeholder="留空"></label>
+<h2>收费情景调整（留空用所选月份收费表）</h2>
+<label>小时单价（元/小时）<input id="tariff-price" type="number" step="0.5" min="0" placeholder="不调整"></label>
+<label>补助比例（0至1）<input id="tariff-share" type="number" step="0.01" min="0" max="1" placeholder="不调整"></label>
+<label>每户月度补助封顶（元）<input id="tariff-cap" type="number" step="10" min="0" placeholder="不调整"></label>
+<label>生活保留额（每户每月，元）<input id="tariff-deduction" type="number" step="10" min="0" placeholder="不调整"></label>
+<button id="run-trial">运行试算</button>
+<h2>情景对比（相同家庭基础）</h2>
+<label>对比情景：收费月份<select id="alt-period"></select></label>
+<label>对比情景：服务口径
+<select id="alt-mode">
+<option value="observed">observed 样本消费</option>
+<option value="uniform">uniform 统一服务情景</option>
+</select></label>
+<button id="run-compare">与对比情景比较</button>
+</section>
+<label>导入完整数据<input id="upload" type="file" accept=".json,application/json"></label>
 <button id="raw">查看原始记录</button><h2>分析记录</h2><label>记录名称<input id="title" value="本次复核"></label>
-<button id="save">保存当前描述</button><div id="archive"></div></aside>
-<section><div id="status" role="status">正在读取本地数据…</div><div id="summary"></div>
+<button id="save">保存当前视图</button><div id="archive"></div></aside>
+<section><div id="status" role="status">正在读取本地数据…</div>
+<div id="view-explore"><div id="summary"></div>
 <h2>家庭收入区间与照护费用构成</h2><div id="notes"></div><canvas id="chart" width="960" height="300" aria-label="所选范围描述图"></canvas>
 <div class="table-wrap"><table><thead id="columns"></thead><tbody id="rows"></tbody></table></div>
+</div>
+<div id="view-trial" class="hidden">
+<h2>试算结果（家庭层面，抽样加权）</h2>
+<div id="trial-notes" class="notes-box"></div>
+<div id="trial-summary" class="cards"></div>
+<h3>负担率分布（加权CDF区间带）</h3>
+<canvas id="cdf-chart" width="960" height="300" aria-label="负担率加权分布区间带"></canvas>
+<h3>收费与补助条款贡献（加权户均，元/月）</h3>
+<div class="table-wrap"><table id="component-table"><thead><tr>
+<th>条款</th><th>加权户均</th><th>加权总量估计</th></tr></thead><tbody id="component-rows"></tbody></table></div>
+<h3>情景对比</h3><div id="compare-box" class="notes-box">尚未运行情景对比。</div>
+<h3>家庭明细（点击一行核对完整计算过程）</h3>
+<div class="table-wrap"><table id="household-table"><thead><tr>
+<th>家庭</th><th>居住类型</th><th>成员关系</th><th>收入区间</th><th>净支出区间(元)</th>
+<th>负担率区间</th><th>分类</th><th>漏报交通费项</th><th>未满足需要账单</th><th>权重</th>
+</tr></thead><tbody id="household-rows"></tbody></table></div>
+</div>
 <h2 id="detail-heading">记录与依据</h2><pre id="details">点击记录行可查看详细字段。</pre><button id="export">导出当前记录</button>
-</section></main><footer>仅使用本地虚构记录；描述统计不替代研究设计与业务复核。</footer><script src="/app.js"></script></body></html>
+</section></main><footer>仅使用本地虚构记录；区间与不确定性不替代研究设计与业务复核。未购买不代表没有需要。</footer><script src="/app.js"></script></body></html>

@@ -61,6 +61,10 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError("请求正文应为对象")
             if self.path == "/api/explore":
                 return self.send(200, self.workbench.inspect(body))
+            if self.path == "/api/trial":
+                return self.send(200, self.workbench.trial(body))
+            if self.path == "/api/compare":
+                return self.send(200, self.workbench.comparison(body))
             if self.path == "/api/datasets":
                 return self.send(201, self.workbench.upload(body))
             if self.path == "/api/notebooks":

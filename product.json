@@ -24,5 +24,10 @@
     "period": "2026-10",
     "zone": "all"
   },
+  "trial_defaults": {
+    "mode": "observed",
+    "burden_line": 0.3,
+    "missing_transport": "impute_median"
+  },
   "purpose": "社会服务分析资料复核"
 }

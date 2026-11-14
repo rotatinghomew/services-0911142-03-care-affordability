@@ -40,6 +40,11 @@ class Store:
                     selection TEXT NOT NULL, result TEXT NOT NULL, created_at TEXT NOT NULL
                 );
             """)
+            columns = {row[1] for row in connection.execute("PRAGMA table_info(notebooks)")}
+            if "kind" not in columns:
+                connection.execute("ALTER TABLE notebooks ADD COLUMN kind TEXT NOT NULL DEFAULT 'explore'")
+            if "request_body" not in columns:
+                connection.execute("ALTER TABLE notebooks ADD COLUMN request_body TEXT")
 
     @contextmanager
     def connection(self):
@@ -76,20 +81,27 @@ class Store:
             raise LookupError("数据版本不存在")
         return json.loads(row["body"])
 
-    def save(self, title, revision, selection, result):
+    def save(self, title, revision, selection, result, kind="explore", request_body=None):
         if not isinstance(title, str) or not title.strip() or len(title) > 160:
             raise ValueError("分析名称应为1至160字")
+        if kind not in ("explore", "trial", "compare"):
+            raise ValueError("记录类型不受支持")
         with self.connection() as connection:
             if connection.execute("SELECT 1 FROM datasets WHERE revision=?", (revision,)).fetchone() is None:
                 raise LookupError("数据版本不存在")
-            cursor = connection.execute("INSERT INTO notebooks(title,revision,selection,result,created_at) VALUES(?,?,?,?,?)",
-                                        (title.strip(), revision, encode(selection), encode(result), datetime.now(timezone.utc).isoformat()))
+            cursor = connection.execute(
+                "INSERT INTO notebooks(title,revision,selection,result,created_at,kind,request_body) "
+                "VALUES(?,?,?,?,?,?,?)",
+                (title.strip(), revision, encode(selection), encode(result),
+                 datetime.now(timezone.utc).isoformat(), kind,
+                 None if request_body is None else encode(request_body)))
             identifier = cursor.lastrowid
         return self.notebook(identifier)
 
     def notebooks(self):
         with self.connection() as connection:
-            return [dict(row) for row in connection.execute("SELECT id,title,revision,created_at FROM notebooks ORDER BY id DESC")]
+            return [dict(row) for row in connection.execute(
+                "SELECT id,title,revision,created_at,kind FROM notebooks ORDER BY id DESC")]
 
     def notebook(self, identifier):
         with self.connection() as connection:
@@ -99,5 +111,7 @@ class Store:
         result = dict(row)
         for field in ["selection", "result"]:
             result[field] = json.loads(result[field])
+        if result.get("request_body") is not None:
+            result["request_body"] = json.loads(result["request_body"])
         result["dataset"] = self.dataset(result["revision"])
         return result
