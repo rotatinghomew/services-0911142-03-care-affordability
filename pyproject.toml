@@ -1,0 +1,6 @@
+[project]
+name = "care-affordability"
+version = "0.1.0"
+description = "家庭照护负担试算器"
+requires-python = ">=3.11"
+dependencies = []
